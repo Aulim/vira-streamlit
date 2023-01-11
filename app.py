@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import math
-from pymongo import MongoClient
+import datetime
+# from pymongo import MongoClient
 
 st.set_page_config(page_title="Viraindo Explorer", layout='wide')
 
@@ -31,18 +32,26 @@ def filter_price(df, min, max):
     filtered_df = df.copy()
     filtered_df = filtered_df[filtered_df['price'] >= min]
     filtered_df = filtered_df[filtered_df['price'] <= max]
-    return filtered_df.reset_index(drop=True)
+    return filtered_df.sort_values(by=['name','price']).reset_index(drop=True)
 
 @st.experimental_memo
-def get_data():
-    with MongoClient('mongodb://localhost:27017/') as client:
-        coll = client['viraindo']['Notebook']
-        df = pd.DataFrame(list(coll.find()))
-        df.drop(columns=['_id','item_id','category'], inplace=True)
-    # return pd.read_json("./vira_data_20220603.json").drop(columns=['Id'])
+def get_today_date():
+    return datetime.datetime.now().strftime("%Y-%m-%d")
+
+@st.experimental_memo
+def get_data(date: str):
+    # with MongoClient('mongodb://localhost:27017/') as client:
+    #     coll = client['viraindo']['Notebook']
+    #     df = pd.DataFrame(list(coll.find()))
+    #     df.drop(columns=['_id','item_id','category'], inplace=True)
+    df = pd.read_csv("https://raw.githubusercontent.com/Aulim/vira-db/main/data/viraindo_notebook.csv")
+    df.drop(columns=['item_id','category'], inplace=True)
+    df = df.loc[df['date'] == date]
+    df.drop(columns=['date'], inplace=True)
     return df
 
-df = get_data()
+current_date = get_today_date()
+df = get_data(current_date)
 
 if 'page_current' not in st.session_state:
     st.session_state.page_current = 1
