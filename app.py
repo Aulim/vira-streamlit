@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import math
+from pymongo import MongoClient
+
+st.set_page_config(page_title="Viraindo Explorer", layout='wide')
 
 st.markdown("<a name='top'></a>", unsafe_allow_html=True)
 
@@ -21,21 +24,25 @@ def show_dataframe_paginated(df, page: int, show_row: int):
 def filter_name(df, filters):
     filtered_df = df.copy()
     for filter in filters:
-        filtered_df = filtered_df[filtered_df['Name'].str.contains(filter) == True]
+        filtered_df = filtered_df[filtered_df['name'].str.lower().str.contains(filter.lower()) == True]
     return filtered_df.reset_index(drop=True)
 
 def filter_price(df, min, max):
     filtered_df = df.copy()
-    filtered_df = filtered_df[filtered_df['Price'] >= min]
-    filtered_df = filtered_df[filtered_df['Price'] <= max]
+    filtered_df = filtered_df[filtered_df['price'] >= min]
+    filtered_df = filtered_df[filtered_df['price'] <= max]
     return filtered_df.reset_index(drop=True)
 
 @st.experimental_memo
 def get_data():
-    return pd.read_json("./vira_data_20220603.json").drop(columns=['Id'])
+    with MongoClient('mongodb://localhost:27017/') as client:
+        coll = client['viraindo']['Notebook']
+        df = pd.DataFrame(list(coll.find()))
+        df.drop(columns=['_id','item_id','category'], inplace=True)
+    # return pd.read_json("./vira_data_20220603.json").drop(columns=['Id'])
+    return df
 
 df = get_data()
-#TODO: Set max price by session state
 
 if 'page_current' not in st.session_state:
     st.session_state.page_current = 1
@@ -57,6 +64,8 @@ if 'filter_params' in st.session_state and len(st.session_state.filter_params) >
 
     if clear_filter_button:
         st.session_state.filter_params.clear()
+        st.session_state.min_price = 0.0
+        st.session_state.max_price = 9999999999.0
         st.experimental_rerun()
 else:
     st.session_state.filter_params = []
@@ -64,13 +73,18 @@ else:
 if 'min_price' in st.session_state and 'max_price' in st.session_state:
     df = filter_price(df, st.session_state.min_price, st.session_state.max_price)
     st.write(f'Mencari produk dengan harga antara {st.session_state.min_price} sampai {st.session_state.max_price}')
+else:
+    st.session_state.min_price = 0.0
+    st.session_state.max_price = 9999999999.0
 
 with st.form("Filter form", True):
     filter = st.text_input("Cari produk yang mengandung kata:")
     min, max = st.columns([1,1])
     #TODO: Fix the max price
-    min_price = min.number_input("Harga minimum", 0.0, 9999999999.0, 0.0)
-    max_price = max.number_input("Harga maksimum", 0.0, 9999999999.0, df['Price'].max())
+    min_val = st.session_state.min_price if st.session_state.min_price is not None else 0.0
+    max_val = st.session_state.max_price if st.session_state.max_price is not None else 9999999999.0
+    min_price = min.number_input("Harga minimum", min_value=0.0, max_value=9999999999.0, value=float(min_val))
+    max_price = max.number_input("Harga maksimum", min_value=0.0, max_value=9999999999.0, value=float(max_val))
     filtered = st.form_submit_button("Cari")
 
     if filtered:
@@ -85,22 +99,25 @@ show_rows = 20
 page_limit = math.ceil(len(df) / show_rows)
 
 if len(df) > 0:
-    st.write(f"Tampilkan halaman {st.session_state.page_current} dari total {len(df)} produk")
+    st.write(f"Ditemukan {len(df)} produk. Tampilkan halaman {st.session_state.page_current} dari total {page_limit}")
+    prev, _, next = st.columns([4,30,4])
 
-    prev, _, next = st.columns([1,20,1])
+    prev_button = prev.button("Prev", disabled=st.session_state.page_current <= 1, key='prev_top')
+    next_button = next.button("Next", disabled=st.session_state.page_current >= page_limit, key='next_top')
 
-    prev_button = prev.button("<", disabled=st.session_state.page_current <= 1)
-    next_button = next.button("\\>", disabled=st.session_state.page_current >= page_limit)
+    st.table(show_dataframe_paginated(df, st.session_state.page_current, show_rows))
 
-    if prev_button:
+    prev_bottom, _, next_bottom = st.columns([4,30,4])
+    prev_button_bottom = prev_bottom.button("Prev", disabled=st.session_state.page_current <= 1, key='prev_bottom')
+    next_button_bottom = next_bottom.button("Next", disabled=st.session_state.page_current >= page_limit, key='next_bottom')
+
+    if prev_button or prev_button_bottom:
         st.session_state.page_current-=1
         st.experimental_rerun()
         
-    if next_button:
+    if next_button or next_button_bottom:
         st.session_state.page_current+=1
         st.experimental_rerun()
-
-    st.table(show_dataframe_paginated(df, st.session_state.page_current, show_rows))
 
     st.markdown("[Back to top](#top)")
 else:
