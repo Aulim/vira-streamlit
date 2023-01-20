@@ -36,7 +36,7 @@ def filter_price(df, min, max):
 
 @st.experimental_memo
 def get_today_date():
-    return datetime.datetime.now().strftime("%Y-%m-%d")
+    return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=+7))).strftime("%Y-%m-%d")
 
 @st.experimental_memo
 def get_data(date: str):
@@ -108,7 +108,12 @@ show_rows = 20
 page_limit = math.ceil(len(df) / show_rows)
 
 if len(df) > 0:
-    st.write(f"Ditemukan {len(df)} produk. Tampilkan halaman {st.session_state.page_current} dari total {page_limit}")
+    curr_page_start_product = ((st.session_state.page_current - 1) * show_rows) + 1
+    if st.session_state.page_current * show_rows < len(df):
+        curr_page_end_product = st.session_state.page_current * show_rows
+    else:
+        curr_page_end_product = len(df)
+    st.write(f"Ditemukan {len(df)} produk. Tampilkan produk ke-{curr_page_start_product} sampai {curr_page_end_product}")
     prev, _, next = st.columns([4,30,4])
 
     prev_button = prev.button("Prev", disabled=st.session_state.page_current <= 1, key='prev_top')
