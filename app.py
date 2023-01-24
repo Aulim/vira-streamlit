@@ -47,7 +47,9 @@ def get_data(date: str):
     df = pd.read_csv("https://raw.githubusercontent.com/Aulim/vira-db/main/data/viraindo_notebook.csv")
     df.drop(columns=['item_id','category'], inplace=True)
     df = df.loc[df['date'] == date]
+    df = df.reset_index(drop=True)
     df.drop(columns=['date'], inplace=True)
+    df['price'] = pd.to_numeric(df['price'], downcast='float')
     return df
 
 current_date = get_today_date()
