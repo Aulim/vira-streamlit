@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit_tags as stt
 import pandas as pd
 import math
 import datetime
@@ -32,7 +33,7 @@ def filter_price(df, min, max):
     filtered_df = df.copy()
     filtered_df = filtered_df[filtered_df['price'] >= min]
     filtered_df = filtered_df[filtered_df['price'] <= max]
-    return filtered_df.sort_values(by=['name','price']).reset_index(drop=True)
+    return filtered_df.reset_index(drop=True)
 
 @st.experimental_memo
 def get_today_date():
@@ -62,22 +63,22 @@ if 'filter_params' in st.session_state and len(st.session_state.filter_params) >
     df = filter_name(df, st.session_state.filter_params)
     filter_txts, pop_filter, clear_filter = st.columns([18,3,3])
     filter_txts.write(f"Anda mencari {', '.join(st.session_state.filter_params)}")
-    pop_filter_button = pop_filter.button(
-        "Hapus terbaru", 
-        disabled=len(st.session_state.filter_params) < 1)
-    clear_filter_button = clear_filter.button(
-        "Hapus semua"
-    )
+    # pop_filter_button = pop_filter.button(
+    #     "Hapus terbaru", 
+    #     disabled=len(st.session_state.filter_params) < 1)
+    # clear_filter_button = clear_filter.button(
+    #     "Hapus semua"
+    # )
 
-    if pop_filter_button:
-        st.session_state.filter_params.pop()
-        st.experimental_rerun()
+    # if pop_filter_button:
+    #     st.session_state.filter_params.pop()
+    #     st.experimental_rerun()
 
-    if clear_filter_button:
-        st.session_state.filter_params.clear()
-        st.session_state.min_price = 0.0
-        st.session_state.max_price = 9999999999.0
-        st.experimental_rerun()
+    # if clear_filter_button:
+    #     st.session_state.filter_params.clear()
+    #     st.session_state.min_price = 0.0
+    #     st.session_state.max_price = 9999999999.0
+    #     st.experimental_rerun()
 else:
     st.session_state.filter_params = []
 
@@ -87,24 +88,50 @@ if 'min_price' in st.session_state and 'max_price' in st.session_state:
 else:
     st.session_state.min_price = 0.0
     st.session_state.max_price = 9999999999.0
+    df = filter_price(df, st.session_state.min_price, st.session_state.max_price)
+    st.write(f'Mencari produk dengan harga antara {st.session_state.min_price} sampai {st.session_state.max_price}')
 
-with st.form("Filter form", True):
-    filter = st.text_input("Cari produk yang mengandung kata:")
+# with st.form("Filter form", True):
+#     filter = st.text_input("Cari produk yang mengandung kata:")
+#     min, max = st.columns([1,1])
+#     #TODO: Fix the max price
+#     min_val = st.session_state.min_price if st.session_state.min_price is not None else 0.0
+#     max_val = st.session_state.max_price if st.session_state.max_price is not None else 9999999999.0
+#     min_price = min.number_input("Harga minimum", min_value=0.0, max_value=9999999999.0, value=float(min_val))
+#     max_price = max.number_input("Harga maksimum", min_value=0.0, max_value=9999999999.0, value=float(max_val))
+#     filtered = st.form_submit_button("Cari")
+
+#     if filtered:
+#         if filter:
+#             st.session_state.filter_params.append(filter)
+#         st.session_state.min_price = min_price
+#         st.session_state.max_price = max_price
+#         st.session_state.page_current = 1
+#         st.experimental_rerun()
+
+with st.expander("Lakukan pencarian", expanded=True):
+    filter = stt.st_tags(label="Cari produk dengan kata kunci:", text="Tekan enter untuk menambah kata kunci", key="search_query", value=st.session_state.filter_params)
     min, max = st.columns([1,1])
-    #TODO: Fix the max price
     min_val = st.session_state.min_price if st.session_state.min_price is not None else 0.0
     max_val = st.session_state.max_price if st.session_state.max_price is not None else 9999999999.0
     min_price = min.number_input("Harga minimum", min_value=0.0, max_value=9999999999.0, value=float(min_val))
     max_price = max.number_input("Harga maksimum", min_value=0.0, max_value=9999999999.0, value=float(max_val))
-    filtered = st.form_submit_button("Cari")
-
+    filtered = st.button("Cari")
+    reset_button = st.button("Hapus pencarian")
     if filtered:
-        if filter:
-            st.session_state.filter_params.append(filter)
+        if len(filter) > 0:
+            st.session_state.filter_params = filter
         st.session_state.min_price = min_price
         st.session_state.max_price = max_price
         st.session_state.page_current = 1
         st.experimental_rerun()
+    if reset_button:
+        st.session_state.filter_params = []
+        st.session_state.min_price = 0.0
+        st.session_state.max_price = 9999999999.0
+        st.session_state.page_current = 1
+        st.experimental_rerun()
+
 
 show_rows = 20
 page_limit = math.ceil(len(df) / show_rows)
