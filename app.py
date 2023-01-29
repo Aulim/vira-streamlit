@@ -72,7 +72,10 @@ if 'sorting' not in st.session_state:
     st.session_state.sorting = False
 
 if 'sort_by' not in st.session_state:
-    st.session_state.sort_by = 'name'
+    st.session_state.sort_by = 'price'
+
+if 'sort_asc' not in st.session_state:
+    st.session_state.sort_asc = True
 #endregion
 
 current_date = get_today_date()
@@ -80,13 +83,14 @@ df = get_data(current_date)
 
 with st.expander("Lakukan pencarian", expanded=True):
     filter = stt.st_tags(label="Cari produk dengan kata kunci:", text="Tekan enter untuk menambah kata kunci", key="search_query", value=st.session_state.filter_params)
+    reset_filter_button = st.button("Hapus pencarian")
     min, max = st.columns([1,1])
     min_val = st.session_state.min_price
     max_val = st.session_state.max_price
     min_price = min.number_input("Harga minimum", min_value=0.0, max_value=9999999999.0, value=float(min_val))
     max_price = max.number_input("Harga maksimum", min_value=0.0, max_value=9999999999.0, value=float(max_val))
+    reset_price_button = st.button("Reset rentang harga")
     filtered = st.button("Cari")
-    reset_button = st.button("Hapus pencarian")
     if filtered:
         if len(filter) > 0:
             st.session_state.filter_params = filter
@@ -94,8 +98,11 @@ with st.expander("Lakukan pencarian", expanded=True):
         st.session_state.max_price = max_price
         st.session_state.page_current = 1
         st.experimental_rerun()
-    if reset_button:
+    if reset_filter_button:
         st.session_state.filter_params = []
+        st.session_state.page_current = 1
+        st.experimental_rerun()
+    if reset_price_button:
         st.session_state.min_price = 0.0
         st.session_state.max_price = 9999999999.0
         st.session_state.page_current = 1
@@ -104,14 +111,50 @@ with st.expander("Lakukan pencarian", expanded=True):
 show_rows = 20
 page_limit = math.ceil(len(df) / show_rows)
 
+#region Sort Data
+reset_sort, sort_name_asc, sort_name_desc, sort_price_asc, sort_price_desc = st.columns([1,1,1,1,1])
+if reset_sort.button('Hapus penyortiran'):
+    st.session_state.sorting = False
+    st.experimental_rerun()
+
+if sort_name_asc.button('Urutkan berdasarkan nama A-Z'):
+    st.session_state.sorting = True
+    st.session_state.sort_by = 'name'
+    st.session_state.sort_asc = True
+    st.experimental_rerun()
+
+if sort_name_desc.button('Urutkan berdasarkan nama Z-A'):
+    st.session_state.sorting = True
+    st.session_state.sort_by = 'name'
+    st.session_state.sort_asc = False
+    st.experimental_rerun()
+
+if sort_price_asc.button('Urutkan berdasarkan harga rendah ke tinggi'):
+    st.session_state.sorting = True
+    st.session_state.sort_by = 'price'
+    st.session_state.sort_asc = True
+    st.experimental_rerun()
+
+if sort_price_desc.button('Urutkan berdasarkan harga tinggi ke rendah'):
+    st.session_state.sorting = True
+    st.session_state.sort_by = 'price'
+    st.session_state.sort_asc = False
+    st.experimental_rerun()
+
+if 'sorting' in st.session_state and 'sort_by' in st.session_state and 'sort_asc' in st.session_state:
+    if st.session_state.sorting:
+        df = df.sort_values(by=st.session_state.sort_by, ascending=st.session_state.sort_asc)
+#endregion
+
+#region Filter Data
 if 'filter_params' in st.session_state and len(st.session_state.filter_params) > 0:
     df = filter_name(df, st.session_state.filter_params)
-    filter_txts, pop_filter, clear_filter = st.columns([18,3,3])
-    filter_txts.write(f"Anda mencari {', '.join(st.session_state.filter_params)}")
+    st.write(f"Anda mencari {', '.join(st.session_state.filter_params)}")
 
 if st.session_state.min_price > 0 or st.session_state.max_price < 9999999999.0:
     df = filter_price(df, st.session_state.min_price, st.session_state.max_price)
     st.write(f'Mencari produk dengan harga antara {st.session_state.min_price} sampai {st.session_state.max_price}')
+#endregion
 
 if len(df) > 0:
     curr_page_start_product = ((st.session_state.page_current - 1) * show_rows) + 1
