@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit_tags as stt
 import pandas as pd
 import math
 import datetime
