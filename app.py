@@ -36,6 +36,28 @@ def filter_price(df, min, max):
     filtered_df = filtered_df[filtered_df['price'] <= max]
     return filtered_df.reset_index(drop=True)
 
+def on_search_product():
+    if len(filter) > 0:
+        _filters = filter.split(",")
+        st.session_state.filter_params = _filters
+    st.session_state.page_current = 1
+    st.session_state.product_filter = ""
+    # st.experimental_rerun()
+
+def on_add_search_product():
+    if len(filter) > 0:
+        _filters = filter.split(",")
+        st.session_state.filter_params = st.session_state.filter_params + _filters
+    st.session_state.page_current = 1
+    st.session_state.product_filter = ""
+    # st.experimental_rerun()
+
+def on_reset_product():
+    st.session_state.filter_params = []
+    st.session_state.page_current = 1
+    st.session_state.product_filter = ""
+    # st.experimental_rerun()
+
 @st.experimental_memo
 def get_today_date():
     return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=+7))).strftime("%Y-%m-%d")
@@ -82,26 +104,41 @@ current_date = get_today_date()
 df = get_data(current_date)
 
 with st.expander("Lakukan pencarian", expanded=True):
-    filter = stt.st_tags(label="Cari produk dengan kata kunci:", text="Tekan enter untuk menambah kata kunci", key="search_query", value=st.session_state.filter_params)
-    reset_filter_button = st.button("Hapus pencarian")
+    # filter = stt.st_tags(label="Cari produk dengan kata kunci:", text="Tekan enter untuk menambah kata kunci", key="search_query", value=st.session_state.filter_params)
+    filter = st.text_input(label="Cari produk (pisahkan dengan tanda koma ','):", key="product_filter")
+    search, add, reset = st.columns([1,1,1])
+    search_filter_button = search.button("Cari produk", on_click=on_search_product)
+    add_filter_button = add.button("Tambah pencarian", on_click=on_add_search_product)
+    reset_filter_button = reset.button("Hapus pencarian", on_click=on_reset_product)
     min, max = st.columns([1,1])
     min_val = st.session_state.min_price
     max_val = st.session_state.max_price
     min_price = min.number_input("Harga minimum", min_value=0.0, max_value=9999999999.0, value=float(min_val))
     max_price = max.number_input("Harga maksimum", min_value=0.0, max_value=9999999999.0, value=float(max_val))
-    reset_price_button = st.button("Reset rentang harga")
-    filtered = st.button("Cari")
-    if filtered:
-        if len(filter) > 0:
-            st.session_state.filter_params = filter
+    price_filter, price_reset = st.columns([1,1])
+    reset_price_button = price_reset.button("Reset rentang harga")
+    price_filter_button = price_filter.button("Cari produk dengan rentang harga")
+    # if search_filter_button:
+    #     if len(filter) > 0:
+    #         _filters = filter.split(",")
+    #         st.session_state.filter_params = _filters
+    #     st.session_state.page_current = 1
+    #     st.experimental_rerun()
+    # if add_filter_button:
+    #     if len(filter) > 0:
+    #         _filters = filter.split(",")
+    #         st.session_state.filter_params = st.session_state.filter_params + _filters
+    #     st.session_state.page_current = 1
+    #     st.experimental_rerun()
+    if price_filter_button:
         st.session_state.min_price = min_price
         st.session_state.max_price = max_price
         st.session_state.page_current = 1
         st.experimental_rerun()
-    if reset_filter_button:
-        st.session_state.filter_params = []
-        st.session_state.page_current = 1
-        st.experimental_rerun()
+    # if reset_filter_button:
+    #     st.session_state.filter_params = []
+    #     st.session_state.page_current = 1
+    #     st.experimental_rerun()
     if reset_price_button:
         st.session_state.min_price = 0.0
         st.session_state.max_price = 9999999999.0
