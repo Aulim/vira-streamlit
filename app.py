@@ -107,8 +107,8 @@ with st.expander("Lakukan pencarian", expanded=True):
     filter = st.text_input(label="Cari produk (pisahkan dengan tanda koma ','):", key="product_filter")
     search, add, reset = st.columns([1,1,1])
     search_filter_button = search.button("Cari produk", on_click=on_search_product)
-    add_filter_button = add.button("Tambah pencarian", on_click=on_add_search_product)
-    reset_filter_button = reset.button("Hapus pencarian", on_click=on_reset_product)
+    add_filter_button = add.button("Persempit produk", on_click=on_add_search_product)
+    reset_filter_button = reset.button("Reset pencarian", on_click=on_reset_product)
     min, max = st.columns([1,1])
     min_val = st.session_state.min_price
     max_val = st.session_state.max_price
@@ -116,7 +116,7 @@ with st.expander("Lakukan pencarian", expanded=True):
     max_price = max.number_input("Harga maksimum", min_value=0.0, max_value=9999999999.0, value=float(max_val))
     price_filter, price_reset = st.columns([1,1])
     reset_price_button = price_reset.button("Reset rentang harga")
-    price_filter_button = price_filter.button("Cari produk dengan rentang harga")
+    price_filter_button = price_filter.button("Cari dengan rentang harga")
     # if search_filter_button:
     #     if len(filter) > 0:
     #         _filters = filter.split(",")
@@ -143,9 +143,6 @@ with st.expander("Lakukan pencarian", expanded=True):
         st.session_state.max_price = 9999999999.0
         st.session_state.page_current = 1
         st.experimental_rerun()
-
-show_rows = 20
-page_limit = math.ceil(len(df) / show_rows)
 
 #region Sort Data
 reset_sort, sort_name_asc, sort_name_desc, sort_price_asc, sort_price_desc = st.columns([1,1,1,1,1])
@@ -190,6 +187,9 @@ if 'filter_params' in st.session_state and len(st.session_state.filter_params) >
 if st.session_state.min_price > 0 or st.session_state.max_price < 9999999999.0:
     df = filter_price(df, st.session_state.min_price, st.session_state.max_price)
     st.write(f'Mencari produk dengan harga antara {st.session_state.min_price} sampai {st.session_state.max_price}')
+
+show_rows = 20
+page_limit = math.ceil(len(df) / show_rows)
 #endregion
 
 if len(df) > 0:
@@ -211,11 +211,13 @@ if len(df) > 0:
     next_button_bottom = next_bottom.button("Next", disabled=st.session_state.page_current >= page_limit, key='next_bottom')
 
     if prev_button_top or prev_button_bottom:
-        st.session_state.page_current-=1
+        if st.session_state.page_current > 1:
+            st.session_state.page_current-=1
         st.experimental_rerun()
         
     if next_button_top or next_button_bottom:
-        st.session_state.page_current+=1
+        if st.session_state.page_current < page_limit:
+            st.session_state.page_current+=1
         st.experimental_rerun()
 
     st.markdown("[Back to top](#top)")
