@@ -57,6 +57,9 @@ def on_reset_product():
     st.session_state.product_filter = ""
     # st.experimental_rerun()
 
+def on_page_select_changed():
+    st.session_state.page_current = st.session_state.page_selected
+
 @st.experimental_memo
 def get_today_date():
     return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=+7))).strftime("%Y-%m-%d")
@@ -97,6 +100,9 @@ if 'sort_by' not in st.session_state:
 
 if 'sort_asc' not in st.session_state:
     st.session_state.sort_asc = True
+
+if 'page_selected' not in st.session_state:
+    st.session_state.page_selected = 1
 #endregion
 
 current_date = get_today_date()
@@ -198,7 +204,10 @@ if len(df) > 0:
         curr_page_end_product = st.session_state.page_current * show_rows
     else:
         curr_page_end_product = len(df)
-    st.write(f"Ditemukan {len(df)} produk. Tampilkan produk ke-{curr_page_start_product} sampai {curr_page_end_product}")
+    st.write(f"Ditemukan {len(df)} produk. Menampilkan produk ke-{curr_page_start_product} sampai {curr_page_end_product}")
+    valid_pages = [i for i in range(1,page_limit+1)]
+    page_select = st.selectbox('Tampilkan halaman: ', valid_pages, index=st.session_state.page_current-1 or 0, on_change=on_page_select_changed, key='page_selected')
+    page_show_label = st.write(f'Menampilkan halaman {st.session_state.page_current} dari {page_limit}')
     prev_top, _, next_top = st.columns([4,30,4])
 
     prev_button_top = prev_top.button("Prev", disabled=st.session_state.page_current <= 1, key='prev_top')
