@@ -152,29 +152,29 @@ with st.expander("Lakukan pencarian", expanded=True):
 
 #region Sort Data
 reset_sort, sort_name_asc, sort_name_desc, sort_price_asc, sort_price_desc = st.columns([1,1,1,1,1])
-if reset_sort.button('Hapus penyortiran'):
+if reset_sort.button('⇎ Hapus'):
     st.session_state.sorting = False
     st.experimental_rerun()
 
-if sort_name_asc.button('Urutkan berdasarkan nama A-Z'):
+if sort_name_asc.button('↑ A-Z'):
     st.session_state.sorting = True
     st.session_state.sort_by = 'name'
     st.session_state.sort_asc = True
     st.experimental_rerun()
 
-if sort_name_desc.button('Urutkan berdasarkan nama Z-A'):
+if sort_name_desc.button('↓ A-Z'):
     st.session_state.sorting = True
     st.session_state.sort_by = 'name'
     st.session_state.sort_asc = False
     st.experimental_rerun()
 
-if sort_price_asc.button('Urutkan berdasarkan harga rendah ke tinggi'):
+if sort_price_asc.button('↑ Rp'):
     st.session_state.sorting = True
     st.session_state.sort_by = 'price'
     st.session_state.sort_asc = True
     st.experimental_rerun()
 
-if sort_price_desc.button('Urutkan berdasarkan harga tinggi ke rendah'):
+if sort_price_desc.button('↓ Rp'):
     st.session_state.sorting = True
     st.session_state.sort_by = 'price'
     st.session_state.sort_asc = False
